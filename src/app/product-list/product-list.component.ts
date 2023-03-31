@@ -45,25 +45,62 @@ export class ProductListComponent {
   };
 
   constructor(private http: HttpClient) {
-    this.getTournaments().subscribe();
+    let csv = null;
+    this.getWorldCupData().subscribe((data) => {
+      //this.getGoalsPerTeams(data);
+      const years = this.getYearsTournaments(data);
+      csv = 'pays,region,' + years.join(',') + '\n';
+
+      const goalsPerTeams = this.getGoalsPerTeams(data);
+      Object.keys(goalsPerTeams).map((team) => {
+        const teamName = team;
+        const teamRegion = goalsPerTeams[team].region.replace(',', '|');
+        const teamGoals = goalsPerTeams[team].goals;
+        csv += `${teamName},${teamRegion},${teamGoals.join(',')}\n`;
+      });
+      console.log(csv);
+    });
   }
 
-  getTournaments() {
+  getWorldCupData() {
     return this.http
       .get<any>(
         'https://raw.githubusercontent.com/jfjelstul/worldcup/master/data-json/worldcup.json'
       )
       .pipe(
         map((data) => {
-          this.footData = JSON.parse(data);
-          console.log(this.footData.awards);
-          return 'map';
-          /*return data.cups.map((cup) => {
-            console.log(`${cup.host} ${cup.year}`);
-            return `${cup.host} ${cup.year}`;
-          });*/
+          return JSON.parse(data);
         })
       );
+  }
+
+  getYearsTournaments(data) {
+    const years = [];
+    data.tournaments.forEach((tournament) => {
+      years.push(tournament.year);
+    });
+    return years;
+  }
+
+  getGoalsPerTeams(data) {
+    const result = {};
+
+    data.teams.forEach((team) => {
+      result[team.team_name] = {
+        region: team.region_name,
+        goals: [],
+      };
+      result[team.team_name]['goals'] = [];
+      data.tournaments.forEach((tournament) => {
+        const teamGoals = data.goals.filter(
+          (goal) =>
+            goal.team_id === team.team_id &&
+            goal.tournament_id === tournament.tournament_id
+        );
+        result[team.team_name].goals.push(teamGoals.length);
+      });
+    });
+    return result;
   }
 }
 
