@@ -56,7 +56,7 @@ export class ProductListComponent {
       .pipe(
         map((data) => {
           this.footData = JSON.parse(data);
-          console.log(this.footData);
+          console.log(this.footData.awards);
           return 'map';
           /*return data.cups.map((cup) => {
             console.log(`${cup.host} ${cup.year}`);
