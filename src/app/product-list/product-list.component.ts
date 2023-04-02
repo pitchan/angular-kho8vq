@@ -5,6 +5,8 @@ import { map } from 'rxjs/internal/operators/map';
 
 import { products } from '../products';
 
+import * as i18nIsoCountries from 'i18n-iso-countries';
+
 @Component({
   selector: 'app-product-list',
   templateUrl: './product-list.component.html',
@@ -45,20 +47,25 @@ export class ProductListComponent {
   };
 
   constructor(private http: HttpClient) {
+    i18nIsoCountries.registerLocale(
+      require('i18n-iso-countries/langs/en.json')
+    );
+    console.log();
     let csv = null;
     this.getWorldCupData().subscribe((data) => {
       //this.getGoalsPerTeams(data);
       const years = this.getYearsTournaments(data);
-      csv = 'pays,region,' + years.join(',') + '\n';
+      csv = 'pays,region,flag,' + years.join(',') + '\n';
 
       const goalsPerTeams = this.getGoalsPerTeams(data);
       Object.keys(goalsPerTeams).map((team) => {
         const teamName = team;
+        const teamFlag = this.getTeamFlagUrl(team);
         const teamRegion = goalsPerTeams[team].region.replace(',', '|');
         const teamGoals = goalsPerTeams[team].goals;
-        csv += `${teamName},${teamRegion},${teamGoals.join(',')}\n`;
+        csv += `${teamName},${teamRegion},${teamFlag},${teamGoals.join(',')}\n`;
       });
-      console.log(csv);
+      this.downloadCSV(csv, 'GoalsPerTeamsWorldCup');
     });
   }
 
@@ -74,6 +81,12 @@ export class ProductListComponent {
       );
   }
 
+  getTeamFlagUrl(teamName) {
+    const countryCode = i18nIsoCountries.getAlpha2Code(teamName, 'en');
+    // return `https://public.flourish.studio/country-flags/svg/${countryCode}.svg`;
+    return `https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode}.svg`;
+  }
+
   getYearsTournaments(data) {
     const years = [];
     data.tournaments.forEach((tournament) => {
@@ -84,7 +97,7 @@ export class ProductListComponent {
 
   getGoalsPerTeams(data) {
     const result = {};
-
+    let oldScore = 0;
     data.teams.forEach((team) => {
       result[team.team_name] = {
         region: team.region_name,
@@ -97,10 +110,29 @@ export class ProductListComponent {
             goal.team_id === team.team_id &&
             goal.tournament_id === tournament.tournament_id
         );
-        result[team.team_name].goals.push(teamGoals.length);
+        oldScore = 0;
+        if (result[team.team_name].goals.length > 0) {
+          oldScore =
+            result[team.team_name].goals[
+              result[team.team_name].goals.length - 1
+            ];
+        }
+        result[team.team_name].goals.push(oldScore + teamGoals.length);
       });
     });
     return result;
+  }
+
+  downloadCSV(csv: string, name: string): void {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 }
 
