@@ -58,6 +58,22 @@ export class ProductListComponent {
       csv = 'pays,region,flag,' + years.join(',') + '\n';
 
       const goalsPerTeams = this.getGoalsPerTeams(data);
+
+      // If germany sum West germany + germany goals and remove west germany
+      goalsPerTeams['Germany'].goals = goalsPerTeams['Germany'].goals.map(
+        function (num, idx) {
+          return num + goalsPerTeams['West Germany'].goals[idx];
+        }
+      );
+      delete goalsPerTeams['West Germany'];
+
+      goalsPerTeams['Russia'].goals = goalsPerTeams['Russia'].goals.map(
+        function (num, idx) {
+          return num + goalsPerTeams['Soviet Union'].goals[idx];
+        }
+      );
+      delete goalsPerTeams['Soviet Union'];
+
       Object.keys(goalsPerTeams).map((team) => {
         const teamName = team;
         const teamFlag = this.getTeamFlagUrl(team);
@@ -82,8 +98,26 @@ export class ProductListComponent {
   }
 
   getTeamFlagUrl(teamName) {
-    const countryCode = i18nIsoCountries.getAlpha2Code(teamName, 'en');
-    // return `https://public.flourish.studio/country-flags/svg/${countryCode}.svg`;
+    if (teamName.toLowerCase() === 'yugoslavia') {
+      return 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Flag_of_Yugoslavia_%281946-1992%29.svg/800px-Flag_of_Yugoslavia_%281946-1992%29.svg.png?20220813004708';
+    }
+
+    let countryCode = null;
+    switch (teamName.toLowerCase()) {
+      case 'england':
+        countryCode = 'GB';
+        break;
+      case 'wales':
+        countryCode = 'GB';
+        break;
+      case 'czechoslovakia':
+        countryCode = 'CZ';
+        break;
+      default:
+        countryCode = i18nIsoCountries.getAlpha2Code(teamName, 'en');
+        break;
+    }
+
     return `https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode}.svg`;
   }
 
